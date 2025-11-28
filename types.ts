@@ -1,4 +1,5 @@
 
+
 export type QuestionType = 'boolean' | 'text';
 
 export interface Question {
@@ -59,4 +60,12 @@ export interface DiscussionQuestion {
   id: number;
   topic: string;
   question: string;
+}
+
+export interface LearningActivity {
+  id: number;
+  title: string;
+  category: 'introvert' | 'extrovert';
+  description: string;
+  steps: string[];
 }

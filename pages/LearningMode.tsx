@@ -1,9 +1,11 @@
+
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Languages, PenTool, MessageCircle, Brain, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
-import { SENTENCE_DATA, EXTENSION_SENTENCES, PARAPHRASING_DATA, VOCAB_TEST_SETS, DISCUSSION_QUESTIONS } from '../constants';
+import { BookOpen, Languages, PenTool, MessageCircle, Brain, Lightbulb, ChevronDown, ChevronUp, CheckCircle, XCircle, RotateCcw, Eye, EyeOff, Zap, User, Users } from 'lucide-react';
+import { SENTENCE_DATA, EXTENSION_SENTENCES, PARAPHRASING_DATA, VOCAB_TEST_SETS, DISCUSSION_QUESTIONS, LEARNING_ACTIVITIES } from '../constants';
 
-type Tab = 'text' | 'grammar' | 'vocab' | 'speaking';
+type Tab = 'text' | 'grammar' | 'vocab' | 'speaking' | 'activities';
 
 type DisplayItem = 
   | { type: 'header'; title: string }
@@ -17,7 +19,7 @@ export default function LearningMode() {
   // Vocab Quiz State
   const [activeTestId, setActiveTestId] = useState<number>(1);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string | null>>({});
-  // Derived state for score is calculated on render or via simple memo, no need for complex state syncing
+  const [reviewExpanded, setReviewExpanded] = useState<Record<number, boolean>>({});
 
   // Speaking State
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
@@ -37,13 +39,32 @@ export default function LearningMode() {
     setQuizAnswers(prev => ({ ...prev, [id]: option }));
   };
 
+  const toggleReview = (id: number) => {
+    setReviewExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const activeTest = VOCAB_TEST_SETS.find(t => t.id === activeTestId) || VOCAB_TEST_SETS[0];
+  const totalQuestionsInTest = activeTest.questions.length;
   
   // Calculate score for active test
   const currentTestScore = activeTest.questions.reduce((acc, q) => {
      if (quizAnswers[q.id] === q.correctOption) return acc + 1;
      return acc;
   }, 0);
+
+  const answeredQuestionsInTest = activeTest.questions.filter(q => quizAnswers[q.id]).length;
+  const isTestComplete = answeredQuestionsInTest === totalQuestionsInTest;
+
+  const resetCurrentTest = () => {
+    if (window.confirm("Retake this test? Your answers will be cleared.")) {
+        const newAnswers = { ...quizAnswers };
+        activeTest.questions.forEach(q => {
+            delete newAnswers[q.id];
+        });
+        setQuizAnswers(newAnswers);
+        setReviewExpanded({}); // Clear reviews
+    }
+  };
 
   // Group Speaking Questions
   const topics = Array.from(new Set(DISCUSSION_QUESTIONS.map(q => q.topic)));
@@ -52,17 +73,20 @@ export default function LearningMode() {
     { id: 'text', label: 'Text Study', icon: BookOpen },
     { id: 'grammar', label: 'Grammar & Paraphrasing', icon: PenTool },
     { id: 'vocab', label: 'Vocab Quiz', icon: Brain },
+    { id: 'activities', label: 'Practice Activities', icon: Zap },
     { id: 'speaking', label: 'IELTS Speaking Part 1', icon: MessageCircle },
   ] as const;
 
   // Combine Original + Extension sentences for display
-  // We need to offset the extension indices to avoid collision with original SENTENCE_DATA keys in visibleTranslations
   const allSentences: DisplayItem[] = [
     { type: 'header', title: "Original Text" },
     ...SENTENCE_DATA.map(d => ({ ...d, type: 'sentence' as const })),
     { type: 'header', title: "Extension: Further Context" },
     ...EXTENSION_SENTENCES.map(d => ({ ...d, type: 'sentence' as const }))
   ];
+
+  const introvertActivities = LEARNING_ACTIVITIES.filter(a => a.category === 'introvert');
+  const extrovertActivities = LEARNING_ACTIVITIES.filter(a => a.category === 'extrovert');
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 pb-20">
@@ -289,31 +313,67 @@ export default function LearningMode() {
                   ))}
                </div>
 
-              <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex justify-between items-center">
-                 <div>
-                    <h3 className="font-bold text-gov-blue text-lg">{activeTest.title}</h3>
-                    <p className="text-slate-500 text-sm">Select the best word to complete each sentence.</p>
-                 </div>
-                 <div className="text-right">
-                    <div className="text-3xl font-black text-gov-blue">{currentTestScore} <span className="text-lg text-slate-400 font-medium">/ 10</span></div>
-                    <span className="text-xs font-bold text-slate-400 uppercase">Score</span>
-                 </div>
-              </div>
+              {/* Completion Banner */}
+              {isTestComplete ? (
+                 <motion.div 
+                    initial={{ opacity: 0, y: -20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    className="bg-gradient-to-br from-gov-blue to-blue-900 rounded-xl p-6 text-white shadow-lg mb-4"
+                 >
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <div className="flex items-center space-x-2 mb-2">
+                                <CheckCircle className="w-6 h-6 text-green-400" />
+                                <h3 className="text-2xl font-serif font-bold">Test Completed!</h3>
+                            </div>
+                            <p className="text-blue-200">
+                                You scored <strong className="text-white">{currentTestScore}</strong> out of <strong className="text-white">{totalQuestionsInTest}</strong>.
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-6">
+                            <div className="text-4xl font-black text-gov-gold">
+                                {Math.round((currentTestScore / totalQuestionsInTest) * 100)}%
+                            </div>
+                             <button 
+                                onClick={resetCurrentTest} 
+                                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold flex items-center transition-colors border border-white/20"
+                             >
+                                <RotateCcw className="w-4 h-4 mr-2" />
+                                Retake
+                             </button>
+                        </div>
+                    </div>
+                 </motion.div>
+              ) : (
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-gov-blue text-lg">{activeTest.title}</h3>
+                        <p className="text-slate-500 text-sm">Select the best word to complete each sentence.</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-3xl font-black text-gov-blue">
+                            {answeredQuestionsInTest} <span className="text-lg text-slate-400 font-medium">/ {totalQuestionsInTest}</span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-400 uppercase">Progress</span>
+                    </div>
+                </div>
+              )}
 
               <div className="grid gap-6">
                 {activeTest.questions.map((q) => {
                    const userAnswer = quizAnswers[q.id];
                    const isCorrect = userAnswer === q.correctOption;
                    const isAnswered = !!userAnswer;
+                   const isReviewing = reviewExpanded[q.id];
 
                    return (
                      <div key={q.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                       <p className="text-lg text-slate-700 font-medium mb-4">
+                       <p className="text-lg text-slate-700 font-medium mb-4 leading-loose">
                          {q.sentence.split('[.....]').map((part, i, arr) => (
                            <React.Fragment key={i}>
                              {part}
                              {i < arr.length - 1 && (
-                               <span className={`inline-block w-32 border-b-2 mx-1 text-center font-bold px-1
+                               <span className={`inline-block w-32 border-b-2 mx-1 text-center font-bold px-1 transition-all duration-300
                                  ${!isAnswered ? 'border-slate-300 text-transparent' : ''}
                                  ${isAnswered && isCorrect ? 'border-green-500 text-green-600 bg-green-50 rounded-t' : ''}
                                  ${isAnswered && !isCorrect ? 'border-red-500 text-red-600 bg-red-50 rounded-t' : ''}
@@ -332,10 +392,10 @@ export default function LearningMode() {
                              onClick={() => handleQuizAnswer(q.id, opt)}
                              disabled={isAnswered}
                              className={`px-4 py-2 rounded-lg text-sm font-bold border transition-all
-                               ${!isAnswered ? 'bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600' : ''}
-                               ${isAnswered && opt === q.correctOption ? 'bg-green-100 border-green-500 text-green-700' : ''}
-                               ${isAnswered && opt === userAnswer && opt !== q.correctOption ? 'bg-red-100 border-red-500 text-red-700' : ''}
-                               ${isAnswered && opt !== userAnswer && opt !== q.correctOption ? 'opacity-40 grayscale' : ''}
+                               ${!isAnswered ? 'bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 hover:shadow-sm' : ''}
+                               ${isAnswered && opt === q.correctOption ? 'bg-green-100 border-green-500 text-green-700 shadow-sm' : ''}
+                               ${isAnswered && opt === userAnswer && opt !== q.correctOption ? 'bg-red-100 border-red-500 text-red-700 shadow-sm' : ''}
+                               ${isAnswered && opt !== userAnswer && opt !== q.correctOption ? 'opacity-40 grayscale border-slate-100 bg-slate-50' : ''}
                              `}
                            >
                              {opt}
@@ -344,8 +404,53 @@ export default function LearningMode() {
                        </div>
                        
                        {isAnswered && (
-                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 pt-4 border-t border-slate-100">
-                            <p className="text-sm text-slate-500 italic">"{q.translation}"</p>
+                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 pt-4 border-t border-slate-100">
+                            
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div className="flex items-center space-x-2">
+                                    {isCorrect ? (
+                                        <span className="text-green-600 font-bold flex items-center text-sm bg-green-50 px-2 py-1 rounded border border-green-100"><CheckCircle className="w-4 h-4 mr-1"/> Correct</span>
+                                    ) : (
+                                        <span className="text-red-600 font-bold flex items-center text-sm bg-red-50 px-2 py-1 rounded border border-red-100"><XCircle className="w-4 h-4 mr-1"/> Incorrect</span>
+                                    )}
+                                    <span className="text-slate-300 hidden sm:inline">|</span>
+                                    <p className="text-sm text-slate-500 italic">"{q.translation}"</p>
+                                </div>
+                                
+                                {!isCorrect && (
+                                    <button 
+                                        onClick={() => toggleReview(q.id)}
+                                        className="text-sm text-gov-blue hover:text-blue-700 font-bold flex items-center space-x-1 transition-colors self-start sm:self-auto"
+                                    >
+                                        {isReviewing ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
+                                        <span>{isReviewing ? "Hide Correct Sentence" : "Review Correct Answer"}</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            <AnimatePresence>
+                                {isReviewing && !isCorrect && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: -10, height: 0 }} 
+                                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                                        exit={{ opacity: 0, y: -10, height: 0 }}
+                                        className="mt-3 p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-900 shadow-inner"
+                                    >
+                                        <p className="leading-relaxed">
+                                            {q.sentence.split('[.....]').map((part, i, arr) => (
+                                                <React.Fragment key={i}>
+                                                    {part}
+                                                    {i < arr.length - 1 && (
+                                                        <span className="font-bold text-emerald-700 bg-emerald-200/50 px-1 rounded underline decoration-2 underline-offset-2 mx-1">
+                                                            {q.correctOption}
+                                                        </span>
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
+                                        </p>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                          </motion.div>
                        )}
                      </div>
@@ -355,7 +460,78 @@ export default function LearningMode() {
             </motion.div>
           )}
 
-          {/* TAB 4: SPEAKING */}
+          {/* TAB 4: ACTIVITIES (INTROVERT VS EXTROVERT) */}
+          {activeTab === 'activities' && (
+            <motion.div
+              key="activities"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-6"
+            >
+              <div className="bg-amber-50 p-6 rounded-xl border border-amber-100 mb-6">
+                <h3 className="font-bold text-amber-900 mb-2 flex items-center">
+                  <Zap className="w-5 h-5 mr-2" />
+                  Tailored Practice
+                </h3>
+                <p className="text-amber-800 text-sm">
+                  Choose activities that match your learning personality. Solo activities focus on reflection, while social activities focus on interaction.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Introvert Column */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 text-indigo-600 mb-4 border-b border-indigo-100 pb-2">
+                    <User className="w-6 h-6" />
+                    <h2 className="text-xl font-serif font-bold">Introvert (Solo)</h2>
+                  </div>
+                  {introvertActivities.map(activity => (
+                    <div key={activity.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-all">
+                      <div className="mb-3">
+                         <h3 className="font-bold text-lg text-slate-800">{activity.title}</h3>
+                         <p className="text-sm text-slate-500 italic mt-1">{activity.description}</p>
+                      </div>
+                      <ul className="space-y-2 text-sm text-slate-700">
+                        {activity.steps.map((step, i) => (
+                          <li key={i} className="flex items-start">
+                             <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 mr-2 shrink-0"></div>
+                             <span>{step}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Extrovert Column */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 text-emerald-600 mb-4 border-b border-emerald-100 pb-2">
+                    <Users className="w-6 h-6" />
+                    <h2 className="text-xl font-serif font-bold">Extrovert (Social)</h2>
+                  </div>
+                  {extrovertActivities.map(activity => (
+                    <div key={activity.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-all">
+                       <div className="mb-3">
+                         <h3 className="font-bold text-lg text-slate-800">{activity.title}</h3>
+                         <p className="text-sm text-slate-500 italic mt-1">{activity.description}</p>
+                      </div>
+                      <ul className="space-y-2 text-sm text-slate-700">
+                        {activity.steps.map((step, i) => (
+                          <li key={i} className="flex items-start">
+                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 mr-2 shrink-0"></div>
+                             <span>{step}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 5: SPEAKING */}
           {activeTab === 'speaking' && (
             <motion.div
               key="speaking"

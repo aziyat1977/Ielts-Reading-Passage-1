@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { READING_PASSAGE_TITLE, SENTENCE_DATA, QUESTIONS_TF, QUESTIONS_GAP } from '../constants';
-import { AlertCircle, CheckCircle, Clock, Trophy, AlertTriangle, XCircle, Pause, Play, RotateCcw, Square, Quote } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Trophy, AlertTriangle, XCircle, Pause, Play, RotateCcw, Square, Quote, ArrowRight, Brain, Lightbulb, List, Layout, MoveRight } from 'lucide-react';
+
+type ExamStage = 'intro' | 'vocab' | 'exam' | 'analysis';
 
 export default function StudentExam() {
+  const [currentStage, setCurrentStage] = useState<ExamStage>('intro');
+  
+  // --- EXAM STATE ---
   const [activeTab, setActiveTab] = useState<'text' | 'questions'>('text');
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -12,6 +17,23 @@ export default function StudentExam() {
   const [isPaused, setIsPaused] = useState(false);
   const [visibleTranslations, setVisibleTranslations] = useState<Record<number, { ru: boolean; uz: boolean }>>({});
   
+  // --- INTRO STATE ---
+  const [pros, setPros] = useState(['', '', '']);
+  const [cons, setCons] = useState(['', '', '']);
+
+  // --- VOCAB STATE ---
+  const [vocabMatches, setVocabMatches] = useState<Record<string, string>>({});
+  const [vocabSubmitted, setVocabSubmitted] = useState(false);
+  const vocabItems = [
+    { word: "Scrutiny", def: "Critical observation or examination." },
+    { word: "Gilded cage", def: "Living in luxury but without freedom." },
+    { word: "Self-effacing", def: "Modest, not seeking attention." }
+  ];
+
+  // --- ANALYSIS STATE ---
+  const [collocationAnswers, setCollocationAnswers] = useState({ q1: '', q2: '', q3: '' });
+  const [analysisSubmitted, setAnalysisSubmitted] = useState(false);
+
   const totalQuestions = QUESTIONS_TF.length + QUESTIONS_GAP.length;
   // Count only non-empty answers
   const answeredCount = (Object.values(answers) as string[]).filter(val => val && val.trim().length > 0).length;
@@ -31,7 +53,7 @@ export default function StudentExam() {
 
   // Timer Logic
   useEffect(() => {
-    if (submitted || isPaused) return;
+    if (currentStage !== 'exam' || submitted || isPaused) return;
     
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -44,8 +66,9 @@ export default function StudentExam() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [submitted, isPaused]);
+  }, [submitted, isPaused, currentStage]);
 
+  // --- EXAM HANDLERS ---
   const handleInputChange = (id: number, value: string) => {
     if (submitted || isPaused) return;
     if (timeLeft === 0) return; 
@@ -136,15 +159,319 @@ export default function StudentExam() {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  // --- RENDER HELPERS ---
+
   const isLowTime = timeLeft < 120 && timeLeft > 0;
   const isTimeUp = timeLeft === 0;
   
-  // Timer Ring Calculations
   const radius = 18;
   const circumference = 2 * Math.PI * radius;
   const progress = timeLeft / (20 * 60);
   const strokeDashoffset = circumference - (progress * circumference);
 
+  // --- STAGE COMPONENTS ---
+
+  const StageIntro = () => (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+      className="max-w-3xl mx-auto p-6"
+    >
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="h-64 bg-slate-800 relative overflow-hidden group">
+             {/* Fallback pattern if image fails or for aesthetic */}
+             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-10"></div>
+             <img 
+               src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=1200" 
+               alt="London Westminster" 
+               className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+             />
+             <div className="absolute bottom-0 left-0 p-8 z-20">
+                <span className="bg-gov-gold text-gov-blue text-xs font-bold px-2 py-1 rounded mb-2 inline-block uppercase">Stage 1: Lead-in</span>
+                <h2 className="text-3xl md:text-4xl font-serif font-bold text-white mb-2">Life at Number 10</h2>
+                <p className="text-slate-200 text-lg">Context Setting & Discussion</p>
+             </div>
+        </div>
+        
+        <div className="p-8">
+           <div className="flex items-start space-x-4 mb-8">
+              <div className="p-3 bg-blue-50 rounded-full text-gov-blue">
+                 <Layout className="w-6 h-6" />
+              </div>
+              <div>
+                  <h3 className="text-xl font-bold text-gov-blue mb-2">Private Life vs. Public Duty</h3>
+                  <p className="text-slate-600">
+                    Imagine living inside 10 Downing Street. It is both a family home and a national headquarters.
+                    <br/><span className="italic text-slate-500">"What are the pros and cons of being the Prime Minister's wife?"</span>
+                  </p>
+              </div>
+           </div>
+
+           <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-green-50 p-6 rounded-xl border border-green-100">
+                 <h4 className="font-bold text-green-800 mb-4 flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2" /> Pros (Positives)
+                 </h4>
+                 <div className="space-y-3">
+                    {pros.map((val, i) => (
+                       <input 
+                         key={i}
+                         type="text"
+                         placeholder={`Benefit ${i+1}...`}
+                         value={val}
+                         onChange={(e) => {
+                             const newPros = [...pros];
+                             newPros[i] = e.target.value;
+                             setPros(newPros);
+                         }}
+                         className="w-full px-4 py-2 rounded border border-green-200 focus:ring-2 focus:ring-green-500 outline-none text-sm"
+                       />
+                    ))}
+                 </div>
+              </div>
+
+              <div className="bg-red-50 p-6 rounded-xl border border-red-100">
+                 <h4 className="font-bold text-red-800 mb-4 flex items-center">
+                    <AlertTriangle className="w-4 h-4 mr-2" /> Cons (Negatives)
+                 </h4>
+                 <div className="space-y-3">
+                    {cons.map((val, i) => (
+                       <input 
+                         key={i}
+                         type="text"
+                         placeholder={`Drawback ${i+1}...`}
+                         value={val}
+                         onChange={(e) => {
+                             const newCons = [...cons];
+                             newCons[i] = e.target.value;
+                             setCons(newCons);
+                         }}
+                         className="w-full px-4 py-2 rounded border border-red-200 focus:ring-2 focus:ring-red-500 outline-none text-sm"
+                       />
+                    ))}
+                 </div>
+              </div>
+           </div>
+
+           <div className="flex justify-end">
+              <button 
+                onClick={() => setCurrentStage('vocab')}
+                className="bg-gov-blue text-white hover:bg-blue-900 font-bold py-3 px-8 rounded-full shadow-md flex items-center space-x-2 transition-transform hover:scale-105"
+              >
+                 <span>Continue to Vocabulary</span>
+                 <ArrowRight className="w-4 h-4" />
+              </button>
+           </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  const StageVocab = () => {
+    // Only verify if all are selected
+    const allSelected = Object.keys(vocabMatches).length === 3;
+    const checkVocab = () => {
+       setVocabSubmitted(true);
+    };
+
+    const isVocabCorrect = (word: string) => {
+       const correctDef = vocabItems.find(v => v.word === word)?.def;
+       return vocabMatches[word] === correctDef;
+    };
+
+    const allCorrect = vocabItems.every(v => isVocabCorrect(v.word));
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+        className="max-w-3xl mx-auto p-6"
+      >
+         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden p-8">
+            <div className="mb-8 text-center">
+               <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded mb-3 inline-block uppercase">Stage 2: Pre-teaching</span>
+               <h2 className="text-3xl font-serif font-bold text-gov-blue mb-2">Key Vocabulary</h2>
+               <p className="text-slate-500">Match the words to their correct definitions before reading.</p>
+            </div>
+
+            <div className="grid gap-6 mb-8">
+               {vocabItems.map((item) => (
+                  <div key={item.word} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="font-bold text-xl text-gov-blue md:w-1/3 flex items-center">
+                         {item.word}
+                         {vocabSubmitted && isVocabCorrect(item.word) && <CheckCircle className="w-5 h-5 text-green-500 ml-2" />}
+                         {vocabSubmitted && !isVocabCorrect(item.word) && <XCircle className="w-5 h-5 text-red-500 ml-2" />}
+                      </div>
+                      
+                      <div className="flex items-center md:w-2/3">
+                         <MoveRight className="w-5 h-5 text-slate-300 mr-4 hidden md:block" />
+                         <select 
+                           value={vocabMatches[item.word] || ''}
+                           disabled={vocabSubmitted && allCorrect}
+                           onChange={(e) => setVocabMatches(prev => ({ ...prev, [item.word]: e.target.value }))}
+                           className={`flex-1 p-3 rounded-lg border outline-none cursor-pointer transition-colors ${
+                              vocabSubmitted 
+                                ? (isVocabCorrect(item.word) ? 'border-green-500 bg-green-50 text-green-800' : 'border-red-300 bg-red-50 text-red-800')
+                                : 'border-slate-200 bg-white hover:border-blue-300'
+                           }`}
+                         >
+                            <option value="" disabled>Select definition...</option>
+                            {vocabItems.map(opt => (
+                               <option key={opt.def} value={opt.def}>{opt.def}</option>
+                            ))}
+                         </select>
+                      </div>
+                  </div>
+               ))}
+            </div>
+
+            <div className="flex justify-between items-center">
+                <button onClick={() => setCurrentStage('intro')} className="text-slate-400 hover:text-slate-600 font-medium">Back</button>
+                
+                {!vocabSubmitted || !allCorrect ? (
+                    <button 
+                      onClick={checkVocab}
+                      disabled={!allSelected}
+                      className={`font-bold py-3 px-8 rounded-full shadow-md transition-all ${allSelected ? 'bg-gov-blue text-white hover:bg-blue-900' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                    >
+                       Check Answers
+                    </button>
+                ) : (
+                    <button 
+                      onClick={() => setCurrentStage('exam')}
+                      className="bg-green-600 text-white hover:bg-green-700 font-bold py-3 px-8 rounded-full shadow-md flex items-center space-x-2 animate-bounce"
+                    >
+                       <span>Start Examination</span>
+                       <Clock className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
+         </div>
+      </motion.div>
+    );
+  };
+
+  const StageAnalysis = () => {
+     const solutions = {
+         q1: "expectations",
+         q2: "conscience",
+         q3: "mindset"
+     };
+
+     const checkAnalysis = () => {
+         setAnalysisSubmitted(true);
+     };
+
+     return (
+       <motion.div 
+         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+         className="max-w-3xl mx-auto p-6"
+       >
+         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+            <div className="mb-8 text-center">
+               <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded mb-3 inline-block uppercase">Stage 4: Post-Exam</span>
+               <h2 className="text-3xl font-serif font-bold text-gov-blue mb-2">Language Analysis</h2>
+               <p className="text-slate-500">Focus on Collocations. Complete the phrases from the text context.</p>
+            </div>
+
+            <div className="space-y-6 mb-8">
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                    <div className="grid gap-6">
+                        {/* Q1 */}
+                        <div className="flex items-center gap-3">
+                           <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0">1</span>
+                           <div className="flex-1 text-lg">
+                              <span className="font-bold text-slate-700">High</span>
+                              <input 
+                                type="text" 
+                                placeholder="..." 
+                                value={collocationAnswers.q1}
+                                onChange={e => setCollocationAnswers(prev => ({ ...prev, q1: e.target.value }))}
+                                disabled={analysisSubmitted}
+                                className={`mx-2 border-b-2 bg-transparent outline-none text-center w-32 font-mono ${
+                                    analysisSubmitted 
+                                    ? (collocationAnswers.q1.toLowerCase().includes('expect') ? 'border-green-500 text-green-700' : 'border-red-500 text-red-700')
+                                    : 'border-slate-300 focus:border-indigo-500'
+                                }`}
+                              />
+                           </div>
+                           {analysisSubmitted && <span className="text-sm text-slate-400 font-mono">({solutions.q1})</span>}
+                        </div>
+
+                        {/* Q2 */}
+                        <div className="flex items-center gap-3">
+                           <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0">2</span>
+                           <div className="flex-1 text-lg">
+                              <span className="font-bold text-slate-700">Clear</span>
+                              <input 
+                                type="text" 
+                                placeholder="..." 
+                                value={collocationAnswers.q2}
+                                onChange={e => setCollocationAnswers(prev => ({ ...prev, q2: e.target.value }))}
+                                disabled={analysisSubmitted}
+                                className={`mx-2 border-b-2 bg-transparent outline-none text-center w-32 font-mono ${
+                                    analysisSubmitted 
+                                    ? (collocationAnswers.q2.toLowerCase().includes('conscien') ? 'border-green-500 text-green-700' : 'border-red-500 text-red-700')
+                                    : 'border-slate-300 focus:border-indigo-500'
+                                }`}
+                              />
+                           </div>
+                           {analysisSubmitted && <span className="text-sm text-slate-400 font-mono">({solutions.q2})</span>}
+                        </div>
+
+                        {/* Q3 */}
+                        <div className="flex items-center gap-3">
+                           <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0">3</span>
+                           <div className="flex-1 text-lg">
+                              <span className="font-bold text-slate-700">Entrepreneurial</span>
+                              <input 
+                                type="text" 
+                                placeholder="..." 
+                                value={collocationAnswers.q3}
+                                onChange={e => setCollocationAnswers(prev => ({ ...prev, q3: e.target.value }))}
+                                disabled={analysisSubmitted}
+                                className={`mx-2 border-b-2 bg-transparent outline-none text-center w-32 font-mono ${
+                                    analysisSubmitted 
+                                    ? (collocationAnswers.q3.toLowerCase().includes('mind') ? 'border-green-500 text-green-700' : 'border-red-500 text-red-700')
+                                    : 'border-slate-300 focus:border-indigo-500'
+                                }`}
+                              />
+                           </div>
+                           {analysisSubmitted && <span className="text-sm text-slate-400 font-mono">({solutions.q3})</span>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+                 <button onClick={() => setCurrentStage('exam')} className="text-slate-400 hover:text-slate-600 font-medium">Review Exam</button>
+                 {!analysisSubmitted ? (
+                    <button 
+                       onClick={checkAnalysis}
+                       className="bg-indigo-600 text-white hover:bg-indigo-700 font-bold py-3 px-8 rounded-full shadow-md transition-all"
+                    >
+                       Check Collocations
+                    </button>
+                 ) : (
+                    <button 
+                       onClick={() => window.location.hash = '#/'}
+                       className="bg-slate-800 text-white hover:bg-slate-900 font-bold py-3 px-8 rounded-full shadow-md flex items-center space-x-2"
+                    >
+                       <CheckCircle className="w-4 h-4" />
+                       <span>Finish Lesson</span>
+                    </button>
+                 )}
+            </div>
+         </div>
+       </motion.div>
+     );
+  };
+
+
+  // --- MAIN RENDER ---
+  if (currentStage === 'intro') return <StageIntro />;
+  if (currentStage === 'vocab') return <StageVocab />;
+  if (currentStage === 'analysis') return <StageAnalysis />;
+
+  // --- EXAM STAGE (EXISTING UI) ---
   return (
     <div className="h-[calc(100vh-64px)] overflow-hidden flex flex-col lg:flex-row bg-slate-50">
       
@@ -171,7 +498,7 @@ export default function StudentExam() {
       `}>
         <div className="max-w-2xl mx-auto pb-10">
           <div className="mb-6 border-b border-slate-100 pb-4">
-             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">IELTS Academic Reading</span>
+             <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded mb-2 inline-block uppercase">Stage 3: Task Cycle</span>
              <h2 className="text-3xl font-serif font-bold text-gov-blue leading-tight mt-1">
               {READING_PASSAGE_TITLE}
             </h2>
@@ -424,9 +751,16 @@ export default function StudentExam() {
                     </div>
                     <h3 className="text-xl font-bold text-gov-blue mb-2">Examination Complete</h3>
                     <div className="text-5xl font-black text-gov-blue mb-2 tracking-tight">{score} <span className="text-2xl text-slate-400 font-medium">/ 13</span></div>
-                    <p className="text-slate-500 font-medium">
+                    <p className="text-slate-500 font-medium mb-6">
                         {score >= 12 ? "Outstanding! Mastery level." : score >= 9 ? "Great job! Strong comprehension." : "Keep practicing. Review your answers below."}
                     </p>
+                    <button 
+                      onClick={() => setCurrentStage('analysis')}
+                      className="inline-flex items-center space-x-2 bg-indigo-600 text-white font-bold py-2 px-6 rounded-full hover:bg-indigo-700 transition-colors"
+                    >
+                       <span>Proceed to Analysis</span>
+                       <ArrowRight className="w-4 h-4" />
+                    </button>
                     </motion.div>
                 )}
             </AnimatePresence>

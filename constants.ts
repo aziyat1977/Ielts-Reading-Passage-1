@@ -1,5 +1,6 @@
 
-import { LessonStage, Question, VocabItem, ParaphraseItem, VocabTestSet, DiscussionQuestion } from './types';
+
+import { LessonStage, Question, VocabItem, ParaphraseItem, VocabTestSet, DiscussionQuestion, LearningActivity } from './types';
 
 export const READING_PASSAGE_TITLE = "Life at Number 10: A Profile of Akshata Murty";
 
@@ -922,4 +923,130 @@ export const DISCUSSION_QUESTIONS: DiscussionQuestion[] = [
   { id: 48, topic: "Sport", question: "Did you play sports when you were a child?" },
   { id: 49, topic: "Sport", question: "Do you prefer watching sports or playing them?" },
   { id: 50, topic: "Sport", question: "What are the benefits of playing sports?" }
+];
+
+export const LEARNING_ACTIVITIES: LearningActivity[] = [
+    // INTROVERT ACTIVITIES
+    {
+        id: 1,
+        title: "Digital Association Journal",
+        category: "introvert",
+        description: "Deeply encode vocabulary by linking words to personal memories.",
+        steps: [
+            "Choose 5 target words (e.g., 'Scrutiny', 'Self-effacing').",
+            "Write the definition in your own words.",
+            "Write a paragraph describing a personal memory that links to this word.",
+            "Find an image online that represents this feeling and paste it into your notes."
+        ]
+    },
+    {
+        id: 2,
+        title: "Audio Shadowing (Private)",
+        category: "introvert",
+        description: "Perfect your pronunciation and intonation without the pressure of an audience.",
+        steps: [
+            "Use a text-to-speech tool (or the 'Speaking' tab) to hear a sentence.",
+            "Record yourself saying the sentence immediately after listening.",
+            "Listen to your recording and compare it to the original.",
+            "Repeat until your rhythm matches the model exactly."
+        ]
+    },
+    {
+        id: 3,
+        title: "Mind Map Construction",
+        category: "introvert",
+        description: "Visual learners can connect new vocabulary to existing knowledge structures.",
+        steps: [
+            "Place a central theme (e.g., 'Public Life') in the middle of a page.",
+            "Branch out using target words like 'Gilded cage' or 'Residence'.",
+            "Draw lines connecting these words to synonyms, antonyms, or related concepts.",
+            "Use colors to code positive vs. negative connotations."
+        ]
+    },
+    {
+        id: 4,
+        title: "Creative Writing Challenge",
+        category: "introvert",
+        description: "Contextualize vocabulary by weaving it into a fictional narrative.",
+        steps: [
+            "Select 5-8 words from the vocabulary list.",
+            "Write a 150-word short story titled 'The Secret Letter'.",
+            "Ensure every selected word is used correctly in context.",
+            "Highlight the target words and read the story aloud to yourself."
+        ]
+    },
+    {
+        id: 5,
+        title: "Sentence Transformation",
+        category: "introvert",
+        description: "Practice grammatical flexibility by rewriting sentences.",
+        steps: [
+            "Take a sentence from the text (e.g., 'She views her time as an opportunity to serve.').",
+            "Rewrite it in 3 different ways using different grammar structures (Passive voice, Cleft sentences, etc.).",
+            "Example: 'Serving is viewed by her as an opportunity.'",
+            "Check if the meaning remains the same."
+        ]
+    },
+
+    // EXTROVERT ACTIVITIES
+    {
+        id: 6,
+        title: "Speed Definition Game",
+        category: "extrovert",
+        description: "High-energy social recall practice with a partner.",
+        steps: [
+            "Write target words on slips of paper.",
+            "Set a timer for 60 seconds.",
+            "Describe as many words as possible to your partner without saying the word itself.",
+            "Count how many they guessed correctly. Switch roles."
+        ]
+    },
+    {
+        id: 7,
+        title: "Roleplay: The Interview",
+        category: "extrovert",
+        description: "Simulate a real-life scenario using the target vocabulary.",
+        steps: [
+            "Partner A is a journalist; Partner B is Akshata Murty.",
+            "The journalist asks questions about 'scrutiny' and 'public funds'.",
+            "Partner B must answer using words like 'conscience', 'grounded', and 'engage'.",
+            "Record the interview and review it together."
+        ]
+    },
+    {
+        id: 8,
+        title: "Debate Club",
+        category: "extrovert",
+        description: "Use vocabulary to construct persuasive arguments.",
+        steps: [
+            "Topic: 'Public figures deserve no privacy.'",
+            "One person argues For, the other Against.",
+            "You MUST use at least 3 target words (e.g., 'scrutiny', 'expectations', 'boundary') in your argument.",
+            "The person who uses the most vocabulary correctly wins."
+        ]
+    },
+    {
+        id: 9,
+        title: "Teach It Back",
+        category: "extrovert",
+        description: "Solidify knowledge by explaining it to others.",
+        steps: [
+            "Choose 3 difficult words/idioms from the list.",
+            "Prepare a 2-minute mini-lesson to teach these words to a friend or study group.",
+            "Use examples, gestures, and questions to check their understanding.",
+            "Ask them to use the word in a sentence back to you."
+        ]
+    },
+    {
+        id: 10,
+        title: "The 'Alibi' Game",
+        category: "extrovert",
+        description: "Creative storytelling in a group setting.",
+        steps: [
+            "Create a fake story about where you were yesterday.",
+            "You must include 5 specific target words (e.g., 'rickshaw', 'manor', 'escape').",
+            "Your partner asks rapid-fire questions to find holes in your story.",
+            "Keep the story going while naturally using the vocabulary."
+        ]
+    }
 ];
